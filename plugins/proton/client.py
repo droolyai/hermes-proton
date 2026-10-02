@@ -168,7 +168,8 @@ def session_status() -> dict:
 # --------------------------------------------------------------------------
 
 def mail_list(folder: str = "inbox", limit: int = 25, unread: bool = False) -> Any:
-    args = ["mail", "messages", "list", "--folder", folder, "--page-size", str(limit)]
+    # proton-cli v5: the page size flag is --limit (there is no --page-size).
+    args = ["mail", "messages", "list", "--folder", folder, "--limit", str(limit)]
     if unread:
         args.append("--unread")
     return run(args)
@@ -183,7 +184,9 @@ def mail_search(
     before: str | None = None,
     limit: int = 25,
 ) -> Any:
-    args = ["mail", "messages", "search", "--folder", folder, "--limit", str(limit)]
+    # proton-cli v5 has no `mail messages search` subcommand: every filter is a
+    # flag on `mail messages list`, which doubles as the search.
+    args = ["mail", "messages", "list", "--folder", folder, "--limit", str(limit)]
     for flag, value in (
         ("--keyword", keyword),
         ("--from", sender),
@@ -197,7 +200,8 @@ def mail_search(
 
 
 def mail_get(ref: str, fmt: str = "text") -> Any:
-    return run(["mail", "messages", "get", ref, "--format", fmt])
+    # v5 renamed --format to --render (text | html | raw).
+    return run(["mail", "messages", "get", ref, "--render", fmt])
 
 
 def mail_folders() -> Any:
@@ -274,17 +278,20 @@ def drive_trash(path: str, *, confirm: bool) -> Any:
 # --------------------------------------------------------------------------
 
 def calendars() -> Any:
-    return run(["calendar", "calendars", "list"])
+    # v5 moved calendar enumeration under `calendar settings calendars list`;
+    # `calendar calendars list` no longer exists.
+    return run(["calendar", "settings", "calendars", "list"])
 
 
 def events_list(
     start: str | None = None, end: str | None = None, calendar: str | None = None
 ) -> Any:
+    # v5 uses --after/--before (not --start/--end) for the date range.
     args = ["calendar", "events", "list"]
     if start:
-        args += ["--start", start]
+        args += ["--after", start]
     if end:
-        args += ["--end", end]
+        args += ["--before", end]
     if calendar:
         args += ["--calendar", calendar]
     return run(args)
